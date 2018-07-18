@@ -7,11 +7,16 @@ readonly SWAMP_API_SERVER="$SWAMP_URL/swamp-web-server/public"
 # Fill in these SWAMP_USER, SWAMP_PASSWORD
 readonly SWAMP_USER=
 readonly SWAMP_PASSWORD=
+
 readonly COOKIE_JAR="csa-cookie-jar.txt"
 
 readonly CURL_VERBOSE="--verbose"
 readonly CURL_QUIET="--silent"
 readonly CURL_FLAG="$CURL_VERBOSE"
+
+#readonly CURL_CERT="sib-01.mirsam.org.cer"
+#readonly CURL_CERT_OPT="--cacert $CURL_CERT"
+readonly CURL_CERT_OPT="--insecure"
 
 
 function die {
@@ -33,8 +38,9 @@ function check_config {
     local SED_REGEX="-r"
 
     is_os_mac && SED_REGEX="-E"
-    
-    local API_URL=$(curl "$CURL_FLAG" -f "$URL" | sed -n "$SED_REGEX" 's@"web".+"([^"]+)"@\1@p' | tr -d '[:space:]')
+
+    curl "$CURL_FLAG" $CURL_CERT_OPT -f "$URL" -o config.json
+    local API_URL=$(cat config.json | sed -n "$SED_REGEX" 's@"web".+"([^"]+)"@\1@p' | tr -d '[:space:]')
 
     
     if [[ "$API_URL" != "$SWAMP_API_SERVER" ]]; then
@@ -49,7 +55,9 @@ function login {
 
     printf "\n****** Tying SWAMP login ******\n"
     
-    local http_code=$(curl "$CURL_FLAG" -f \
+    local http_code=$(curl "$CURL_FLAG" \
+                           $CURL_CERT_OPT \
+                           -f \
                            -c "$COOKIE_JAR" \
                            -H "Content-Type: application/json; charset=UTF-8" \
                            -w "%{http_code}\n" \
@@ -75,7 +83,9 @@ function user_info {
 
     printf "\n****** Getting SWAMP User info ******\n"
     
-    local http_code=$(curl "$CURL_FLAG" -f \
+    local http_code=$(curl "$CURL_FLAG" \
+                           $CURL_CERT_OPT \
+                           -f \
                            -b "$COOKIE_JAR" \
                            -c "$COOKIE_JAR" \
                            -H "Content-Type: application/json; charset=UTF-8" \
